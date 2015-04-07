@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+	<meta charset="UTF-8">
+	<meta name="format-detection" content="telephone=yes" />
+  	<meta name="msapplication-tap-highlight" content="yes" />
+	<title>Resultados</title>
+	<link rel="stylesheet" href="js/mobile/jquery.mobile-1.4.5.css">
+	<!--<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css" />-->
+	<!--<link rel="stylesheet" href="js/mobile/jquery.mobile.theme-1.4.5.min.css">-->
+	<script src="js/jquery/jquery2.min.js"></script>
+	<script src="js/mobile/jquery.mobile-1.4.5.min.js"></script>
+	<uses-permission android:name="android.permission.INTERNET" />
+	<script>
+		/**
+	     * Funcion que captura las variables pasados por GET
+	     * http://www.lawebdelprogramador.com/pagina.html?id=10&pos=3
+	     * Devuelve un array de clave=>valor
+	     */
+	     function getGET()
+		    {
+		        // capturamos la url
+		        var loc = document.location.href;
+		        // si existe el interrogante
+		        if(loc.indexOf('?')>0)
+		        {
+		            // cogemos la parte de la url que hay despues del interrogante
+		            var getString = loc.split('?')[1];
+		            // obtenemos un array con cada clave=valor
+		            var GET = getString.split('&');
+		            var get = {};
+
+		            // recorremos todo el array de valores
+		            for(var i = 0, l = GET.length; i < l; i++){
+		                var tmp = GET[i].split('=');
+		                get[tmp[0]] = unescape(decodeURI(tmp[1]));
+		            }
+		            return get;
+		        }
+		    }
+
+		$(function(){
+
+			/*swipe para menu*/
+			$( document ).on( "swipeleft swiperight", "#principal", function( e ) {
+		        // We check if there is no open panel on the page because otherwise
+		        // a swipe to close the left panel would also open the right panel (and v.v.).
+		        // We do this by checking the data that the framework stores on the page element (panel: open).
+		        if ( $( ".ui-page-active" ).jqmData( "panel" ) !== "open" ) {
+		            if ( e.type === "swipeleft" ) {
+		                //$( "#panel_1" ).panel( "open" );
+		            } else if ( e.type === "swiperight" ) {
+		                $( "#panel_1" ).panel( "open" );
+		            }
+		        }
+		    });
+			//---------------
+
+			//CAPTURA LOS PARAMETROS
+			var parametros = getGET();
+
+			var tabla = parametros.categoria.toLowerCase();
+
+			console.log(tabla);
+
+			//var cons_result = "select * from "+tabla+" where pkID='"+parametros.id+"'";
+
+			var cons_result = "";
+			var cons_r_emp_nprod = "";
+
+			if(tabla == "productos"){
+
+			//href='resultado.html?id=" +value.id+ "&categoria="+value.category+"'
+
+			cons_result = "select productos.*,empresas.pkID as id_empresa,empresas.nombre as nom_empresa, parametros.nombre as nom_estado"+
+
+					" from productos "+
+
+					" inner join empresas on empresas.pkID = productos.empresa_id"+
+					" inner join parametros on parametros.pkID = productos.estado_id"+
+
+					" where productos.pkID='"+parametros.id+"'";
+
+			}else if(tabla == "empresas"){
+
+			cons_result = "select empresas.pkID as id_empresa, empresas.nombre as nom_empresa,empresas.direccion, empresas.telefono, empresas.web,empresas.imagen, productos.*, parametros.nombre as nom_estado, municipios.nombre as nom_muni "+ 
+
+				" FROM `empresas`"+
+
+				" inner join productos on productos.empresa_id = empresas.pkID"+
+				" inner join parametros on parametros.pkID = empresas.estado_id"+
+				" inner join municipios on municipios.pkID = empresas.municipio_id"+
+
+				" where empresas.pkID ='"+parametros.id+"'";
+
+			cons_r_emp_nprod = "select empresas.*,municipios.nombre as nom_muni from empresas "+
+
+								" inner join municipios on municipios.pkID = empresas.municipio_id"+
+
+								" where empresas.pkID ='"+parametros.id+"'";
+
+			}else if(tabla == "categorías"){
+
+			cons_result = "select empresas.pkID as id_empresa, empresas.nombre as nom_empresa,empresas.direccion, empresas.telefono, empresas.web, productos.*, parametros.nombre as nom_estado, municipios.nombre as nom_muni, categorias_empresas.nombre as nom_cat "+ 
+
+				" FROM `empresas`"+
+
+				" inner join productos on productos.empresa_id = empresas.pkID"+
+				" inner join parametros on parametros.pkID = empresas.estado_id"+
+				" inner join municipios on municipios.pkID = empresas.municipio_id"+
+				" inner join categorias_empresas on categorias_empresas.pkID = empresas.categoria_id"+
+
+				" where empresas.categoria_id ='"+parametros.id+"' order by empresas.nombre asc";
+			}
+
+			console.log(cons_result);
+/**/	
+			$.ajax({
+				url: 'http://vivedigitalsantander.com/pruebas_ecompetic/ecompetic_mobile/includes/int_DAO.php',
+				type: 'GET',
+				crossDomain: true,
+				dataType: 'jsonp',
+				jsonp: 'callback',
+				data: "consulta="+cons_result+"&tipo=mostrar",
+				beforeSend: function() {
+	              	//--------------------------
+	              	//abre loader
+				    $.mobile.loading( "show", {
+				            text: "cargando...",
+				            textVisible: true
+				    });
+				    //--------------------------
+				  },
+			})
+			.done(function(data) {
+				console.log(data.mensaje);		
+
+				if(tabla == "productos"){
+
+					$("#res_principal").html("");
+
+					//$("#data_result").html("<h1> Empresa: "+data.mensaje[0].nom_empresa+"</h1>");
+					/*$.each(data.mensaje[0], function(index, val) {
+						$("#res_principal").append('<h3>'+index+': '+val+'</h3>');
+					});*/					
+					//empresa_id
+					$("#res_principal").append(
+					'<div class="ui-block">'+					
+
+						  //'<div class="ui-bar ui-bar-a">'+
+						  //'</div>'+
+
+						    '<h1 class="ui-bar ui-bar-a ui-icon-navigation ui-btn-icon-right"><a href="resultado.html?id='+data.mensaje[0].empresa_id+'&categoria=Empresas" target="_self">'+data.mensaje[0].nom_empresa+'</a></h1>'+
+						  
+
+						  '<div class="ui-body ui-body-a ui-block">'+
+						    '<h2>'+data.mensaje[0].nombre+'</h2>'+
+							'<img src="http://ecompetic.com/admin/uploads/'+data.mensaje[0].imagen1+'" style="max-width: 90%; margin: auto; display: inherit;" />'+
+							'<h2>$'+data.mensaje[0].precio+'</h2>'+
+							'<p>'+data.mensaje[0].descripcion_larga+'</p>'+
+						  '</div>'+
+
+						
+					'</div>'
+					);
+								
+
+				}else if(tabla == "empresas"){
+
+					$("#res_principal").html("");
+
+					if(data.mensaje === "No ha registros desde mostrar."){
+
+						//$("#res_principal").html("No hay resultados para esta empresa?");
+						$.ajax({
+							url: 'http://vivedigitalsantander.com/pruebas_ecompetic/ecompetic_mobile/includes/int_DAO.php',
+							type: 'GET',
+							crossDomain: true,
+							dataType: 'jsonp',
+							jsonp: 'callback',
+							data: "consulta="+cons_r_emp_nprod+"&tipo=mostrar",
+							beforeSend: function() {
+				              	//--------------------------
+				              	//abre loader
+							    $.mobile.loading( "show", {
+							            text: "cargando...",
+							            textVisible: true
+							    });
+							    //--------------------------
+							  },
+						})
+						.done(function(data) {
+							console.log(data.mensaje);
+							$("#res_principal").html(
+								"<h1 class='ui-bar ui-bar-a'>"+data.mensaje[0].nombre+"</h1>"+
+								'<div class="ui-bar ui-bar-a">'+'<img src="http://ecompetic.com/admin/uploads/'+data.mensaje[0].imagen+'" alt="" style="max-width: 90%; display: inherit; margin: auto;"/>'+'</div>'+
+								"<h4>Municipio: "+data.mensaje[0].nom_muni+"</h4>"+
+								"<h4>Dirección: "+data.mensaje[0].direccion+"</h4>"+
+								"<h4>Teléfono: "+data.mensaje[0].telefono+"</h4>"+
+								"<h4>Web: <a href='http://"+data.mensaje[0].web+"'>"+data.mensaje[0].web+"</a></h4>"+
+								"<br /> <h4>En este momento no hay productos para esta empresa.</h4>"
+							);
+
+							$.mobile.loading( "hide" );
+						})
+						.fail(function() {
+							console.log("error");
+						})
+						.always(function() {
+							console.log("complete");
+						});						
+
+					}else{
+						
+						//--------------------------------------------------------------------------------------------------
+						$("#res_principal").html(
+							"<h1 class='ui-bar ui-bar-a'>"+data.mensaje[0].nom_empresa+"</h1>"+
+							'<div class="ui-bar ui-bar-a">'+'<img src="http://ecompetic.com/admin/uploads/'+data.mensaje[0].imagen+'" alt="" style="max-width: 90%; display: inherit; margin: auto;"/>'+'</div>'+
+							"<h4>Municipio: "+data.mensaje[0].nom_muni+"</h4>"+
+							"<h4>Dirección: "+data.mensaje[0].direccion+"</h4>"+
+							"<h4>Teléfono: "+data.mensaje[0].telefono+"</h4>"+
+							"<h4>Web: <a href='http://"+data.mensaje[0].web+"'>"+data.mensaje[0].web+"</a></h4>"
+						);
+
+						$.each(data.mensaje, function(index, val) {
+										 /* iterate through array or object */
+										 //console.log(index, val);
+								$("#res_principal").append(
+							
+									'<div class="ui-block">'+
+										'<div class="ui-bar ui-bar-a" style="height:0px">'+								
+											//console.log(val.nombre);  empresa_id										
+										'</div>'+
+
+										'<div class="ui-block-a" style="padding: 0px 0px 0px 20px;"><h3> Nombre: </h3> <h4>'+val.nombre+'</h4>&nbsp</div>'+
+										'<div class="ui-block-b" style="padding: 0px 0px 0px 20px;"><h3> Precio: </h3> <h4>$'+val.precio+'</h4>&nbsp</div>'+
+										'<div class="ui-block-c" style="padding: 0px 0px 0px 20px;"><h3> Estado: </h3> <h4>'+val.nom_estado+'</h4>&nbsp</div>'+							
+
+									'</div>'+
+
+									'<div class="ui-bar ui-bar-a">'+'<img src="http://ecompetic.com/admin/uploads/'+val.imagen1+'" alt="" style="max-width: 90%; display: inherit; margin: auto;"/>'+'</div>'+
+
+									'<div class="ui-bar ui-bar-a">'+'<a href="resultado.html?id='+val.pkID+'&categoria=Productos" target="_self" class="ui-btn ui-icon-navigation ui-btn-icon-right">ver</a>'+'</div>'						
+								);
+							});
+					}
+
+				}else if(tabla == "categorías"){
+					//console.log(data.mensaje+" esta es una categoría.");
+					$("#res_principal").html("");
+	
+					$("#res_principal").html(						
+							'<h1> Categoría: '+data.mensaje[0].nom_cat+'</h1>'							
+					);					
+
+					$.each(data.mensaje, function(index, val) {
+						 /* iterate through array or object */
+					
+							$("#res_principal").append(
+								
+								'<div class="ui-block">'+
+									'<div class="ui-bar ui-bar-a" style="height:80px">'+								
+										//console.log(val.nombre);  empresa_id
+										'Empresa: <br />'+
+										'<a href="resultado.html?id='+val.empresa_id+'&categoria=Empresas" target="_self" class="ui-btn ui-icon-navigation ui-btn-icon-right">'+val.nom_empresa+'</a>'+
+									'</div>'+
+
+									'<div class="ui-block-a" style="padding: 0px 0px 0px 20px;"><h3> Nombre: </h3> <h4>'+val.nombre+'</h4>&nbsp</div>'+
+									'<div class="ui-block-b" style="padding: 0px 0px 0px 20px;"><h3> Precio: </h3> <h4>$'+val.precio+'</h4>&nbsp</div>'+
+									'<div class="ui-block-c" style="padding: 0px 0px 0px 20px;"><h3> Estado: </h3> <h4>'+val.nom_estado+'</h4>&nbsp</div>'+							
+
+								'</div>'+
+
+								'<div class="ui-bar ui-bar-a">'+'<img src="http://ecompetic.com/admin/uploads/'+val.imagen1+'" alt="" style="max-width: 90%; display: inherit; margin: auto;"/>'+'</div>'+
+
+								'<div class="ui-bar ui-bar-a">'+'<a href="resultado.html?id='+val.pkID+'&categoria=Productos" target="_self" class="ui-btn ui-icon-navigation ui-btn-icon-right">ver</a>'+'</div>'						
+							);
+					});						
+						
+				}		
+
+				//cierra loader
+				$.mobile.loading( "hide" );			
+			})
+			.fail(function() {
+				console.log("error");
+			})
+			.always(function() {
+				console.log("complete");
+			});
+
+
+				$("#btn_inicio").click(function(event) {
+					/* Act on the event */
+					location.href="index.html";
+				});
+
+				$("#btn_directorio").click(function(event) {
+					/* Act on the event */
+					location.href="directorio.html";
+				});
+
+				$("#btn_promociones").click(function(event) {
+					/* Act on the event */
+					location.href="promociones.html";
+				});
+		
+		});   
+
+	</script>
+</head>
+<body id="principal">
+		<!-- -->
+		<div id="panel_1" data-role="panel" data-display="overlay" >
+			<h2>Menú</h2>	  		
+	  		<button id="btn_inicio" class="ui-btn ui-icon-navigation ui-btn-icon-left">Inicio</button>
+	  		<button id="btn_directorio" class="ui-btn ui-icon-navigation ui-btn-icon-left">Directorio</button>
+			<button id="btn_promociones" class="ui-btn ui-icon-navigation ui-btn-icon-left">Promociones</button>	
+	  		<a href="#my-header" data-rel="close" class="ui-btn ui-icon-delete ui-btn-icon-left">Cerrar</a>
+		</div>	
+			
+		<div data-role="header" style="overflow:hidden;" data-theme="b">
+			<h1>ecompetic Mobile</h1>			
+			<a href="#panel_1" class="ui-btn ui-shadow ui-corner-all ui-btn-icon-left ui-icon-bars">Menú</a>	    
+		</div><!-- /header -->
+
+		<div role="main" class="ui-content">
+
+				<div id="data_result"></div>
+
+				<div id="res_principal" class="ui-grid-a">
+				<!-- -->
+					<table data-role="table" id="table-column-toggle" class="ui-responsive table-stroke">
+				     <thead>
+				       <tr id="encabezado">
+				<!-- -->  
+				         <th>Nombre</th>
+				         <th data-priority="3">Precio</th>
+						 <th data-priority="5">Estado</th>
+				         <th data-priority="1"></th>
+						 <th>Detalle</th>
+				    
+				       </tr>
+				     </thead>
+				     <tbody id="contenido">     
+				     </tbody>
+				   </table>
+				<!-- -->
+				</div>
+		</div>
+
+</body>
+</html>

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+	<meta charset="UTF-8">
+	<title>Directorio ecompetic</title>
+	<meta name="format-detection" content="telephone=yes" />
+  	<meta name="msapplication-tap-highlight" content="yes" />
+	<link rel="stylesheet" href="js/mobile/jquery.mobile-1.4.5.css">
+	<!--<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css" />-->
+	<!--<link rel="stylesheet" href="js/mobile/jquery.mobile.theme-1.4.5.min.css">-->
+	<script src="js/jquery/jquery2.min.js"></script>
+	<script src="js/mobile/jquery.mobile-1.4.5.min.js"></script>
+	<script src="js/jquery.lazyload.min.js"></script>
+	<uses-permission android:name="android.permission.INTERNET" />
+
+
+	<script>
+		
+		$(function(){
+
+			/*swipe para menu*/
+			$( document ).on( "swipeleft swiperight", "#directorio", function( e ) {
+		        // We check if there is no open panel on the page because otherwise
+		        // a swipe to close the left panel would also open the right panel (and v.v.).
+		        // We do this by checking the data that the framework stores on the page element (panel: open).
+		        if ( $( ".ui-page-active" ).jqmData( "panel" ) !== "open" ) {
+		            if ( e.type === "swipeleft" ) {
+		                //$( "#panel_1" ).panel( "open" );
+		            } else if ( e.type === "swiperight" ) {
+		                $( "#panel_1" ).panel( "open" );
+		            }
+		        }
+		    });
+		//---------------------------------------------------------------------------------------------------------
+
+			var cantidad_emp = 0;
+			var pag_nav = 0;
+			var action = "";
+			var cont = 1;
+
+			function r_bd_cant(){
+
+				//enviar consulta para saber el total de registros de la BD
+
+				var c_cant_reg = " SELECT COUNT( * ) AS cantidad FROM empresas";			 
+
+				$.ajax({
+					url: 'http://vivedigitalsantander.com/pruebas_ecompetic/ecompetic_mobile/includes/int_DAO.php',
+					type: 'GET',
+					crossDomain: true,
+					dataType: 'jsonp',
+					jsonp: 'callback',
+					data: "consulta="+c_cant_reg+"&tipo=mostrar",
+				})
+				.done(function(data) {
+					console.log(data.mensaje);
+					cantidad_emp = data.mensaje[0].cantidad;
+				})
+				.fail(function() {
+					console.log("error");
+				})
+				.always(function() {
+					console.log("complete");
+				});
+				
+
+				//ver una forma de dividir esa cantidad para que solo salgan 10 resultados.
+
+			}
+			
+			r_bd_cant();
+		//---------------------------------------------------------------------------------------------------------
+			//crear los límites a partir de la cantidad de registros		
+
+		function res_ajax_cons(consulta,cant_resultados,action){
+
+			$.ajax({
+				url: 'http://vivedigitalsantander.com/pruebas_ecompetic/ecompetic_mobile/includes/int_DAO.php',
+				type: 'GET',
+				crossDomain: true,
+				dataType: 'jsonp',
+				jsonp: 'callback',
+				data: "consulta="+consulta+"&tipo=mostrar",
+				beforeSend: function() {
+	              	//--------------------------
+	              	//abre loader
+				    $.mobile.loading( "show", {
+				            text: "cargando...",
+				            textVisible: true
+				    });
+				    //--------------------------
+				  },
+			})
+			.done(function(data) {
+				console.log(data.mensaje);
+				console.log("La cantidad de empresas es:"+cantidad_emp);
+
+				$("#res_principal").html("");
+				//-----------------------------------------------------------------------------
+				$.each(data.mensaje, function(index, val) {
+				 /* iterate through array or object */
+			
+					$("#res_principal").append(
+						"<h1 class='ui-bar ui-bar-a'>"+val.nombre+"</h1>"+
+						'<img class="lazy" src="http://ecompetic.com/admin/uploads/'+val.imagen+'" style="max-width: 60%; margin: auto; display: inherit;" />'+
+						"<h4>Municipio: "+val.nom_municipio+"</h4>"+
+						"<h4>Dirección: "+val.direccion+"</h4>"+
+						"<h4>Teléfono: "+val.telefono+"</h4>"+
+						"<h4>Web: <a href='http://"+val.web+"'>"+val.web+"</a></h4>"+
+						'<div class="ui-bar ui-bar-a">'+'<a href="resultado.html?id='+val.pkID+'&categoria=Empresas" target="_self" class="ui-btn ui-icon-navigation ui-btn-icon-right">ver</a>'+'</div>'
+					);
+				});
+
+				//contador de paginas----------------------				
+
+				pag_nav = (cantidad_emp / cant_resultados);
+
+				pag_nav_int =parseInt(pag_nav.toFixed(0)) + 1;
+
+				
+				if(action == "start"){					
+					$("#info-nav").html("<h3 style='margin-left: 5%;'>"+"Página "+cont+" de "+pag_nav_int+"</h3>");
+
+				}else if(action == "sig"){					
+					cont++;
+					$("#info-nav").html("<h3 style='margin-left: 5%;'>"+"Página "+cont+" de "+pag_nav_int+"</h3>");
+
+				}else if(action == "atr"){					
+					cont--;
+					$("#info-nav").html("<h3 style='margin-left: 5%;'>"+"Página "+cont+" de "+pag_nav_int+"</h3>");
+				}
+
+				console.log("el contador es:"+cont+" y el navegador es:"+pag_nav_int);
+
+				if(cont==1){
+					$("#btn_atr").hide();
+				}else if(cont>=pag_nav_int){
+					$("#btn_sig").hide();
+				}else if(cont>1 && cont<pag_nav_int){
+					$("#btn_atr").show();
+					$("#btn_sig").show();
+				}
+				
+				//-----------------------------------------
+
+				//-----------------------------------------------------------------------------
+//'<img class="lazy" src="http://ecompetic.com/admin/uploads/'+val.imagen+'" style="max-width: 90%; margin: auto; display: inherit;" />'+
+				//cierra loader
+				$.mobile.loading( "hide" );
+				//lazy loader
+				$("img.lazy").lazyload({
+				    effect : "fadeIn"
+				});
+				//-----------			
+			})
+			.fail(function(xhr) {
+				console.log("error");
+				//cierra loader
+				$.mobile.loading( "hide" );
+
+				$.mobile.loading( "show", {
+				            text: "Error al cargar -- "+xhr.status,
+				            textVisible: true,
+							textonly: true
+				    });	
+			})
+			.always(function() {
+				console.log("complete");				
+			});
+
+		}	
+		
+		
+
+			var lim_ini = 0;
+			var lim_fin = 5;
+
+			
+			var cons_result = "select empresas.*,municipios.nombre as nom_municipio from empresas"+
+			" inner join municipios on municipios.pkID = empresas.municipio_id order by empresas.nombre"+
+			" limit "+lim_ini+" ,"+lim_fin;
+
+			action = "start";
+			
+			res_ajax_cons(cons_result,lim_fin,action);
+
+			console.log(cons_result);
+
+		//-------------------------------------------------------------
+				$("#btn_inicio").click(function(event) {
+					/* Act on the event */
+					location.href="index.html";
+				});		
+
+				$("#btn_promociones").click(function(event) {
+					/* Act on the event */
+					location.href="promociones.html";
+				});
+
+		//-------------------------------------------------------------
+		//funciones para los botones atras y siguiente
+
+				$("#btn_sig").click(function(event) {
+					/* Act on the event */
+					lim_ini = lim_ini + 5;
+					
+					cons_result = "select empresas.*,municipios.nombre as nom_municipio from empresas"+
+					" inner join municipios on municipios.pkID = empresas.municipio_id order by empresas.nombre"+
+					" limit "+lim_ini+" ,"+lim_fin;
+					
+					action = "sig";
+
+					res_ajax_cons(cons_result,lim_fin,action);
+
+					location.href="#titulo";
+
+					console.log(cons_result);
+				});
+
+				$("#btn_atr").click(function(event) {
+					/* Act on the event */
+					lim_ini = lim_ini - 5;
+					
+					cons_result = "select empresas.*,municipios.nombre as nom_municipio from empresas"+
+					" inner join municipios on municipios.pkID = empresas.municipio_id order by empresas.nombre"+
+					" limit "+lim_ini+" ,"+lim_fin;
+								
+					action = "atr";
+
+					res_ajax_cons(cons_result,lim_fin,action);
+
+					location.href="#titulo";
+
+					console.log(cons_result);
+				});
+		//-------------------------------------------------------------
+
+		});   
+
+	</script>
+</head>
+<body data-role="page" id="directorio" data-url="directorio">
+	<!-- header-->
+		<div id="panel_1" data-role="panel" data-display="overlay" >
+			<h2>Menú</h2>
+	  		<button id="btn_inicio" class="ui-btn ui-icon-navigation ui-btn-icon-left">Inicio</button>	  		
+			<button id="btn_promociones" class="ui-btn ui-icon-navigation ui-btn-icon-left">Promociones</button>	
+	  		<a href="#my-header" data-rel="close" class="ui-btn ui-icon-delete ui-btn-icon-left">Cerrar</a>
+		</div>	
+			
+		<div data-role="header" style="overflow:hidden;" data-theme="b">
+			<h1 id="titulo">ecompetic Mobile</h1>			
+			<a href="#panel_1" class="ui-btn ui-shadow ui-corner-all ui-btn-icon-left ui-icon-bars">Menú</a>	    
+		</div><!-- /header -->
+
+
+		<div role="main" class="ui-content">
+	        <!-- principal -->
+			<div id="data_result">
+				<h2>Directorio de Empresas</h2>
+			</div>
+			<div id="res_principal" class="ui-grid-a"></div>
+
+			<br/><br/>
+			<hr>
+
+			<div id="nav_pag" class="ui-grid-b ui-responsive">
+				<div class="ui-block-a">
+					<button id="btn_atr" class="ui-btn ui-icon-arrow-l ui-btn-icon-left">Atrás</button>
+				</div>
+				<div class="ui-block-b">
+					<div id="info-nav">
+						
+					</div>					
+				</div>
+				<div class="ui-block-c">
+					<button id="btn_sig" class="ui-btn ui-icon-arrow-r ui-btn-icon-right">Siguiente</button>
+				</div>				
+			</div>
+			<!-- /principal -->
+    	</div>
+	
+</body>
+</html>

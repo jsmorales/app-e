@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+	<meta charset="UTF-8">
+	<meta name="format-detection" content="telephone=yes" />
+  	<meta name="msapplication-tap-highlight" content="yes" />
+	<title>Prueba jquery mobile 2</title>
+	<link rel="stylesheet" href="js/mobile/jquery.mobile-1.4.5.min.css">
+	<!--<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css" />-->
+	<!--<link rel="stylesheet" href="js/mobile/jquery.mobile.theme-1.4.5.min.css">-->
+	<script src="js/jquery/jquery2.min.js"></script>
+	<script src="js/mobile/jquery.mobile-1.4.5.min.js"></script>
+	<!--<script src="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>-->
+	<uses-permission android:name="android.permission.INTERNET" />
+	<!--<meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, target-densitydpi=device-dpi" />-->
+	<script>
+	$(function(){
+
+			/*swipe para menu*/
+			$( document ).on( "swipeleft swiperight", "#principal", function( e ) {
+		        // We check if there is no open panel on the page because otherwise
+		        // a swipe to close the left panel would also open the right panel (and v.v.).
+		        // We do this by checking the data that the framework stores on the page element (panel: open).
+		        if ( $( ".ui-page-active" ).jqmData( "panel" ) !== "open" ) {
+		            if ( e.type === "swipeleft" ) {
+		                //$( "#panel_1" ).panel( "open" );
+		            } else if ( e.type === "swiperight" ) {
+		                $( "#panel_1" ).panel( "open" );
+		            }
+		        }
+		    });
+			//---------------
+		
+		$( "#autocomplete" ).on( "filterablebeforefilter", function ( e, data ) {
+
+			/**/
+			var ul = $(this);
+			var criterio = $( "#autocomplete-input" ).val();
+
+			if(criterio.length > 0){
+							
+				$.ajax({
+	              url: 'http://vivedigitalsantander.com/pruebas_ecompetic/ecompetic_mobile/includes/int_DAO.php',
+	              crossDomain: true,
+	              type: 'GET',
+	              dataType: 'jsonp',
+	              jsonp: 'callback',//nombre de la variable get para reconocer la petición
+	              data: "tipo=auto_c&criterio="+criterio,
+	              beforeSend: function() {
+	              	//--------------------------
+	              	//abre loader
+				    $.mobile.loading( "show", {
+				            text: "cargando...",
+				            textVisible: true
+				    });
+				    //--------------------------
+				  },
+	              error: function(xhr, status, error) {
+	                  alert(" Error: --"+status+"-"+xhr.status);
+	                  console.log(xhr.status);
+	              },
+	              success: function(jsonp) {
+	              	 console.log(jsonp.mensaje[4]);
+
+	                 //$("#respuesta").listview( "refresh" );
+	                 /*
+	                 $("#autocomplete").html("");
+
+	                 $.each( jsonp.mensaje, function ( key, value ) {
+		                    $("#autocomplete").append("<li class='ui-btn ui-icon-navigation ui-btn-icon-right'> <h1><a href='http://" + value.web+ "' target='_blank'>" + value.nombre+ "</a></h1></li>");
+							//console.log(key+"-"+value);
+							console.log(value);
+
+		             });*/
+
+					
+		                    /*$("#autocomplete").append("<li class='ui-btn ui-icon-navigation ui-btn-icon-right'> <h1><a href='http://" + value.web+ "' target='_blank'>" + value.nombre+ "</a></h1></li>");*/
+							//console.log(key+"-"+value);
+
+							//console.log("en mensaje llave = "+key+" valor ="+value.label);
+							//console.log("en mensaje llave = "+key+" valor ="+value.category);
+							//console.log("en mensaje value = "+value);
+							/*
+							if(jsonp.mensaje[0].category == "Productos"){
+
+								$("#autocomplete").append("<li><h1>Productos</h1></li>");
+
+								$.each( jsonp.mensaje, function ( key, value ) {					
+									
+									if(value.category == "Productos"){
+
+										$("#autocomplete").append("<li class='ui-btn ui-icon-navigation ui-btn-icon-right'> <h1><a href='http://" +value.id+ "' target='_blank'>" + value.label+ "</a></h1></li>");
+									}
+									
+								});
+							}
+
+							if(jsonp.mensaje[0].category == "Empresas"){
+
+								$("#autocomplete").append("<li><h1>Empresas</h1></li>");
+
+								$.each( jsonp.mensaje, function ( key, value ) {					
+									
+									if(value.category == "Empresas"){
+
+										$("#autocomplete").append("<li class='ui-btn ui-icon-navigation ui-btn-icon-right'> <h1><a href='http://" +value.id+ "' target='_blank'>" + value.label+ "</a></h1></li>");
+									}
+									
+								});
+							}*/
+
+							$.each( jsonp.mensaje, function ( key, value ) {
+								if(value.category == "Productos"){
+									$("#autocomplete").append("<li id='c_prod' class='ul-listview'></li>");
+									//<li><h1>Productos</h1></li>
+									$("#c_prod").html("<li><h1>Productos</h1></li>");
+								}
+								if(value.category == "Empresas"){
+									$("#autocomplete").append("<li id='c_emp' class='ul-listview'></li>");
+									$("#c_emp").html("<li><h1>Empresas</h1></li>");
+								}
+								if(value.category == "Categorías"){
+									$("#autocomplete").append("<li id='c_cat' class='ul-listview'></li>");
+									$("#c_cat").html("<li><h1>Categorías</h1></li>");
+								}
+
+								if(value.category == "- - -"){
+									$("#autocomplete").append("<li id='c_no' class='ul-listview'></li>");
+									$("#c_no").html("<li><h1>- - -</h1></li>");
+								}
+							});
+
+							$.each( jsonp.mensaje, function ( key, value ) {
+
+								if(value.category == "Productos"){															
+																				
+									$("#c_prod").append("<a href='resultado.html?id=" +value.id+ "&categoria="+value.category+"' target='_self' data-transition='slidefade'><li 	class='ui-btn ui-icon-navigation ui-btn-icon-right'> <h1>" +value.label+ "</h1></li></a>");							
+								}
+
+								if(value.category == "Empresas"){
+									
+									$("#c_emp").append("<a href='resultado.html?id=" +value.id+ "&categoria="+value.category+"' target='_self'><li class='ui-btn ui-icon-navigation ui-btn-icon-right'> <h1>" +value.label+ "</h1></li></a>");	
+									
+								}
+
+								if(value.category == "Categorías"){
+									
+									$("#c_cat").append("<a href='resultado.html?id=" +value.id+ "&categoria="+value.category+"' target='_self'><li class='ui-btn ui-icon-navigation ui-btn-icon-right'> <h1>" + value.label+ "</h1></li></a>");	
+									
+								}
+
+								if(value.category == "- - -"){
+									
+									$("#c_no").append("<a href=''><li class='ui-btn ui-icon-navigation ui-btn-icon-right'> <h1>" + value.label+ "</h1></li></a>");	
+									
+								}
+
+							});
+							
+							//cierra loader
+							$.mobile.loading( "hide" );
+
+	              }
+
+				});//cierra ajax
+			}
+
+	    });
+
+		$("#btn_directorio").click(function() {
+				console.log("click!");
+				location.href="directorio.html";
+		});
+
+		$("#p_loader").click(function(event) {
+			/* Act on the event 
+			var $this = $( this ),
+		        theme = $this.jqmData( "theme" ) || $.mobile.loader.prototype.options.theme,
+		        msgText = $this.jqmData( "msgtext" ) || $.mobile.loader.prototype.options.text,
+		        textVisible = $this.jqmData( "textvisible" ) || $.mobile.loader.prototype.options.textVisible,
+		        textonly = !!$this.jqmData( "textonly" );
+		        html = $this.jqmData( "html" ) || "";
+		    $.mobile.loading( "show", {
+		            text: msgText,
+		            textVisible: textVisible,
+		            theme: theme,
+		            textonly: textonly,
+		            html: html
+		    });*/
+
+			//$.mobile.loading( "show");
+
+			$.mobile.loading( "show", {
+		            text: "cargando...",
+		            textVisible: true
+		    });
+			//---------------------
+		});
+
+		$("#p_close").click(function(event) {
+			/* Act on the event */
+			$.mobile.loading( "hide" );
+		});
+
+
+				$("#btn_directorio").click(function(event) {
+					/* Act on the event */
+					location.href="directorio.html";
+				});
+
+				$("#btn_promociones").click(function(event) {
+					/* Act on the event */
+					location.href="promociones.html";
+				});
+
+	});
+	</script>
+</head>
+
+<body id="principal">		
+	<div>
+		<!-- -->
+		<div id="panel_1" data-role="panel" data-display="overlay" >
+			<h2>Menú Principal</h2>	  		
+	  		<button id="btn_directorio" class="ui-btn ui-icon-navigation ui-btn-icon-left">Directorio</button>
+			<button id="btn_promociones" class="ui-btn ui-icon-navigation ui-btn-icon-left">Promociones</button>	
+	  		<a href="#my-header" data-rel="close" class="ui-btn ui-icon-delete ui-btn-icon-left">Cerrar</a>
+		</div>	
+			
+		<div data-role="header" style="overflow:hidden;" data-theme="b">
+			<h1>ecompetic Mobile</h1>			
+			<a href="#panel_1" class="ui-btn ui-shadow ui-corner-all ui-btn-icon-left ui-icon-bars">Menú</a>	    
+		</div><!-- /header -->
+
+		<!-- -->
+		<div role="main" class="ui-content">
+			<div class="ui-bar ui-bar-a">
+				<img src="http://ecompetic.com/images/logotipo.png" alt="" style="max-width: 90%; display: inherit; margin: auto;"/>
+			</div>
+			<form class="ui-filterable">					
+					<input id="autocomplete-input" data-type="search" placeholder="Búsqueda...">
+					<!-- ver modulo de autocompletado http://demos.jquerymobile.com/1.4.5/listview-autocomplete-remote/-->			
+			</form>
+			<ul id="autocomplete" data-role="listview" data-inset="" data-filter="true" data-input="#autocomplete-input"></ul>
+		</div>	
+		<!--<button id="p_loader" class="ui-btn" data-textonly="false" data-textvisible="true" data-msgtext="" data-inline="true">abre Loader</button>
+		<button id="p_close" class="ui-btn">cierra Loader</button>-->
+		<!--  Ejemplo html para el autocompletado
+		<form class="ui-filterable">
+		    <input id="autocomplete-input" data-type="search" placeholder="Find a city...">
+		</form>
+		<ul id="autocomplete" data-role="listview" data-inset="true" data-filter="true" data-input="#autocomplete-input"></ul>
+		-->		
+
+		<!--<div class="ui-grid-a">
+		    <div class="ui-block-a"><div class="ui-bar ui-bar-a" >Block A</div></div>
+		    <div class="ui-block-b"><div class="ui-bar ui-bar-a" style="top: -20px;" >Block B</div></div>
+		</div> /grid-a -->
+	</div>
+</body>
+</html>
